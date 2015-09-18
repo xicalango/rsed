@@ -1,0 +1,69 @@
+
+use std::io::BufRead;
+use std::vec::IntoIter;
+
+#[derive(Debug)]
+pub struct Buffer {
+    lines: Vec<String>,
+    cached_num_lines: usize
+}
+
+trait InsertAll {
+    type Item;
+
+    fn insert_all<I: IntoIterator<Item=Self::Item>>(&mut self, pos: usize, insert: I) -> usize;
+
+}
+
+impl <T> InsertAll for Vec<T> {
+    type Item = T;
+
+    fn insert_all<I: IntoIterator<Item=Self::Item>>(&mut self, pos: usize, insert: I) -> usize {
+        let mut count = 0 as usize;
+        for (index, item) in insert.into_iter().enumerate() {
+            self.insert( pos + index, item );
+            count += 1;
+        }
+
+        count
+    }
+}
+
+impl IntoIterator for Buffer {
+    type Item = String;
+    type IntoIter = IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lines.into_iter()
+    }
+}
+
+impl Buffer {
+
+    pub fn from_buf_read<R: BufRead + Sized> (buf_read: R) -> Buffer {
+
+        let lines = buf_read.lines();
+
+        let lines_vec = lines.map(|r| r.unwrap()).collect::<Vec<String>>();
+        let cached_len = lines_vec.len();
+
+        Buffer {
+            lines: lines_vec,
+            cached_num_lines: cached_len
+        }
+
+    }
+
+    pub fn insert_lines<I: Iterator<Item=String>>(&mut self, pos: usize, insert: I) {
+        let added_lines = self.lines.insert_all(pos, insert);
+        self.cached_num_lines += added_lines;
+    }
+
+    pub fn insert_buffer(&mut self, pos: usize, buffer: Buffer) {
+        self.lines.insert_all(pos, buffer.lines);
+        self.cached_num_lines += buffer.cached_num_lines;
+    }
+
+}
+
+
