@@ -1,4 +1,5 @@
 
+use std::iter::FromIterator;
 use std::io::BufRead;
 use std::vec::IntoIter;
 
@@ -12,7 +13,6 @@ trait InsertAll {
     type Item;
 
     fn insert_all<I: IntoIterator<Item=Self::Item>>(&mut self, pos: usize, insert: I) -> usize;
-
 }
 
 impl <T> InsertAll for Vec<T> {
@@ -29,6 +29,15 @@ impl <T> InsertAll for Vec<T> {
     }
 }
 
+impl FromIterator<String> for Buffer {
+    fn from_iter<T>(iter: T) -> Buffer
+        where T: IntoIterator<Item=String> {
+            let mut buffer = Buffer::new();
+            buffer.insert_lines(0, iter);
+            return buffer
+        }
+}
+
 impl IntoIterator for Buffer {
     type Item = String;
     type IntoIter = IntoIter<String>;
@@ -39,6 +48,13 @@ impl IntoIterator for Buffer {
 }
 
 impl Buffer {
+
+    pub fn new() -> Buffer {
+        Buffer { 
+            lines: Vec::new(),
+            cached_num_lines: 0 as usize
+        }
+    }
 
     pub fn from_buf_read<R: BufRead + Sized> (buf_read: R) -> Buffer {
 
@@ -54,7 +70,7 @@ impl Buffer {
 
     }
 
-    pub fn insert_lines<I: Iterator<Item=String>>(&mut self, pos: usize, insert: I) {
+    pub fn insert_lines<I: IntoIterator<Item=String>>(&mut self, pos: usize, insert: I) {
         let added_lines = self.lines.insert_all(pos, insert);
         self.cached_num_lines += added_lines;
     }
@@ -62,6 +78,19 @@ impl Buffer {
     pub fn insert_buffer(&mut self, pos: usize, buffer: Buffer) {
         self.lines.insert_all(pos, buffer.lines);
         self.cached_num_lines += buffer.cached_num_lines;
+    }
+
+    pub fn add_line(&mut self, line: String) {
+        self.lines.push(line);
+        self.cached_num_lines += 1;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cached_num_lines == 0
+    }
+
+    pub fn len(&self) -> usize {
+        self.cached_num_lines
     }
 
 }

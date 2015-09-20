@@ -3,9 +3,13 @@ extern crate rsed;
 
 use std::env;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{
+    BufReader,
+    stdin
+};
 
 use rsed::buffer::*;
+use rsed::ui;
 
 fn main() {
 
@@ -21,10 +25,9 @@ fn main() {
 
     println!("{:?}", buffer);
 
+    let mut ui = ui::UI::new(&mut buffer);
 
-    {
-        buffer.insert_lines(0, vec!["a", "b"].iter().map(|s| s.to_string()));
-    }
-
-    println!("{:?}", buffer);
+    let mut input = BufReader::new( stdin() );
+    
+    ui.main_loop( &mut input );
 }
