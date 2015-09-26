@@ -8,26 +8,6 @@ use std::io::{
     stdin
 };
 
-use rsed::buffer::*;
-use rsed::ui;
-
 fn main() {
-
-    let args = &mut env::args();
-
-    let path = args.nth(1).expect("no path given");
-
-    let f = File::open(path).unwrap();
-
-    let reader = BufReader::new(f);
-
-    let mut buffer = Buffer::from_buf_read(reader);
-
-    println!("{:?}", buffer);
-
-    let mut ui = ui::UI::new(&mut buffer);
-
-    let mut input = BufReader::new( stdin() );
-    
-    ui.main_loop( &mut input );
+    rsed::run(env::args()).ok().expect("fail");
 }
