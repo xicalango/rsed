@@ -1,6 +1,5 @@
 
 use std::io;
-use std::result;
 
 use Result;
 

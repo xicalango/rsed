@@ -73,6 +73,7 @@ struct Rsed {
     current_buffer: buffer::Buffer,
     input_buffer: Option<buffer::Buffer>,
     ui: ui::Ui,
+    running: bool,
 }
 
 impl Rsed {
@@ -81,7 +82,8 @@ impl Rsed {
         Rsed {
             current_buffer: buffer::Buffer::new(),
             input_buffer: Option::None,
-            ui: ui::Ui::new()
+            ui: ui::Ui::new(),
+            running: true
         }
     }
 
@@ -93,24 +95,30 @@ impl Rsed {
         Ok(Rsed {
             current_buffer: buffer,
             input_buffer: Option::None,
-            ui: ui::Ui::new()
+            ui: ui::Ui::new(),
+            running: true
         })
     }
 
     pub fn main_loop(&mut self) {
 
-        let mut running = true;
         let mut stdin = io::stdin();
 
-        while(running) {
-            let action = self.ui.get_input(&mut stdin);
+        while(self.running) {
+            let action_result = self.ui.get_input(&mut stdin);
 
-            match action {
-                Ok(ui::Action::Command(command::Command::Quit)) => running = false,
-                Ok(rest) => println!("{:?}", rest),
+            match action_result {
+                Ok(action) => self.handle_action(action),
                 Err(_) => println!("?")
             };
         }
+    }
+
+    fn handle_action(&mut self, action: ui::Action) {
+        match action {
+            ui::Action::Command(command::Command::Quit) => self.running = false,
+            rest => println!("{:?}", rest),
+        };
     }
 
 }

@@ -91,3 +91,11 @@ impl str::FromStr for Range {
     }
 }
 
+pub trait Ranged {
+    fn lower(&self) -> usize;
+    fn upper(&self) -> usize;
+    fn length(&self) -> usize {
+        self.upper() - self.lower()
+    }
+}
+
