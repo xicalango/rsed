@@ -97,15 +97,15 @@ impl Buffer {
     }
 
     fn is_out_of_bounds(&self, pos: usize) -> bool {
-        pos < 0 || pos >= self.len()
+        pos < 0 || pos > self.len()
     }
 
-    pub fn get_lines<R: pos::Ranged>(&self, range: &R) -> &[String] {
-        assert!(! self.is_out_of_bounds( range.lower() ) );
-        assert!(! self.is_out_of_bounds( range.upper() ) );
+    pub fn get_lines(&self, begin: usize, end: usize) -> &[String] {
+        assert!(! self.is_out_of_bounds( begin ), format!("Out of bounds: {}/0", begin) );
+        assert!(! self.is_out_of_bounds( end ), format!("Out of bounds: {}/{}", end, self.len()) );
 
 
-        &self.lines[ range.lower() .. range.upper() ]
+        &self.lines[ begin .. end ]
     }
 
 }

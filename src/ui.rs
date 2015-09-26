@@ -4,7 +4,7 @@ use std::io;
 use Result;
 
 use buffer::Buffer;
-use command;
+use cmd;
 
 #[derive(Debug)]
 pub enum Mode {
@@ -19,7 +19,7 @@ pub struct Ui {
 
 #[derive(Debug)]
 pub enum Action {
-    Command(command::Command),
+    Command(cmd::Cmd),
     Insert(String),
     InsertEnd,
 }
@@ -32,8 +32,12 @@ impl Ui {
         }
     }
 
-    pub fn display(&self, buffer: &Buffer) {
-        println!("{:?}", buffer);
+    pub fn display(&self, buffer: &Buffer, range: (usize, usize)) {
+        let (from, to) = range;
+
+        for line in buffer.get_lines( from, to ) {
+            println!("{}", line);
+        }
     }
 
     pub fn get_input(&self, stdin: &io::Stdin) -> Result<Action> {

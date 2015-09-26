@@ -13,6 +13,10 @@ use std::io;
 
 use std::convert;
 
+use self::cmd::Cmd;
+
+use self::pos::RealPos;
+
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -64,14 +68,15 @@ impl Error {
 }
 
 struct InputInformation {
-    position: usize,
+    position: pos::Range,
     input_buffer: buffer::Buffer
 }
 
 #[derive(Debug)]
-struct Rsed {
+pub struct Rsed {
     current_buffer: buffer::Buffer,
     input_buffer: Option<buffer::Buffer>,
+    current_line: usize,
     ui: ui::Ui,
     running: bool,
 }
@@ -82,6 +87,7 @@ impl Rsed {
         Rsed {
             current_buffer: buffer::Buffer::new(),
             input_buffer: Option::None,
+            current_line: 1,
             ui: ui::Ui::new(),
             running: true
         }
@@ -95,6 +101,7 @@ impl Rsed {
         Ok(Rsed {
             current_buffer: buffer,
             input_buffer: Option::None,
+            current_line: 1,
             ui: ui::Ui::new(),
             running: true
         })
@@ -116,13 +123,36 @@ impl Rsed {
 
     fn handle_action(&mut self, action: ui::Action) {
         match action {
-            ui::Action::Command(command::Command::Quit) => self.running = false,
-            rest => println!("{:?}", rest),
+            ui::Action::Command(Cmd::Quit) => self.running = false,
+            ui::Action::Command(Cmd::Print(r)) => self.print_range(r),
+            ui::Action::Command(Cmd::Jump(r)) => self.jump_to(r),
+            rest => println!("Unimplemented: {:?}", rest),
         };
+    }
+
+    fn print_range(&self, r: pos::Range) {
+       let range = r.to_range_tuple::<Rsed>(self);
+
+       self.ui.display( &self.current_buffer, range )
+       
+    }
+
+    fn jump_to(&mut self, r: pos::Range) {
+        self.current_line = self.get_real_pos( &pos::Pos::from(r) );
+        self.print_range( pos::Range::Line(pos::Pos::Current));
     }
 
 }
 
+impl pos::RealPos for Rsed {
+    fn get_real_pos(&self, pos: &pos::Pos) -> usize {
+        match *pos {
+            pos::Pos::Line(n) => n,
+            pos::Pos::Current => self.current_line,
+            pos::Pos::End => self.current_buffer.len()
+        }
+    }
+}
 
 pub fn run(mut args: Args) -> Result<()> {
 

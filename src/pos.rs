@@ -15,6 +15,10 @@ pub enum Pos {
     End
 }
 
+pub trait RealPos {
+    fn get_real_pos(&self, pos: &Pos) -> usize;
+}
+
 static POS_RE: &'static str = r"(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)";
 static RANGE_RE: &'static str = r"(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?";
 
@@ -91,11 +95,16 @@ impl str::FromStr for Range {
     }
 }
 
-pub trait Ranged {
-    fn lower(&self) -> usize;
-    fn upper(&self) -> usize;
-    fn length(&self) -> usize {
-        self.upper() - self.lower()
-    }
-}
+impl Range {
 
+    pub fn to_range_tuple<P: RealPos>(&self, conv: &RealPos) -> (usize, usize) {
+        match *self {
+            Range::Line(ref p) => {
+                let pos = conv.get_real_pos(&p);
+                (pos - 1, pos)
+            },
+            Range::Range(ref f, ref t) => (conv.get_real_pos(&f) - 1, conv.get_real_pos(&t))
+        }
+    }
+
+}
