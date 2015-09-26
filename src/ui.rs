@@ -2,30 +2,16 @@
 use std::io::BufRead;
 use std::result;
 
+use Result;
+
 use buffer::Buffer;
 
-
-type Result<T> = result::Result<T, String>;
+use action::Action;
 
 #[derive(Debug)]
-enum Mode {
+pub enum Mode {
     Command,
     Insert
-}
-
-enum Action {
-    ModeInsert,
-    Quit
-}
-
-impl Action {
-    fn from_char(c: char) -> Result<Action> {
-        match c {
-            'i' => Ok(Action::ModeInsert),
-            'q' => Ok(Action::Quit),
-            _ => Err(format!("Invalid action: {}", c))
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -46,5 +32,8 @@ impl Ui {
         println!("{:?}", buffer);
     }
 
+    pub fn get_input(&self) -> Result<Action> {
+        unimplemented!()
+    }
 
 }
