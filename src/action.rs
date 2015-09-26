@@ -1,9 +1,10 @@
 
-use ui;
+use command;
 
 pub enum Action {
-    InsertLine(String),
-    SwitchMode(ui::Mode),
-    Quit
+    Command(command::Command),
+    Insert(String),
+    InsertEnd,
 }
+
 

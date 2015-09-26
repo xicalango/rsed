@@ -1,6 +1,5 @@
-
-
 use std::str;
+use std::convert;
 use regex::Regex;
 
 use {
@@ -16,10 +15,13 @@ pub enum Pos {
     End
 }
 
+static POS_RE: &'static str = r"(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)";
+static RANGE_RE: &'static str = r"(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?";
+
 impl str::FromStr for Pos {
     type Err = Error;
     fn from_str(s: &str) -> Result<Pos> {
-        let re = Regex::new(r"(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)").unwrap();
+        let re = Regex::new(POS_RE).unwrap();
  
         if let Some(captures) = re.captures(s) {
 
@@ -45,6 +47,15 @@ impl str::FromStr for Pos {
     }
 }
 
+impl convert::From<Range> for Pos {
+    fn from(r: Range) -> Pos {
+        match r {
+            Range::Line(p) => p,
+            Range::Range(_, p) => p
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Range {
     Line(Pos),
@@ -55,11 +66,11 @@ impl str::FromStr for Range {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Range> {
-        let re = Regex::new(r"(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?").unwrap();
+        let re = Regex::new(RANGE_RE).unwrap();
 
         if let Some(captures) = re.captures(s) {
             if let Some(_) = captures.name("all") {
-                return Ok( Range::Range( Pos::Line(0), Pos::End ) );
+                return Ok( Range::Range( Pos::Line(1), Pos::End ) );
             }
 
             if let Some(first) = captures.name("first") {
@@ -79,5 +90,4 @@ impl str::FromStr for Range {
         Err(Error::detailed(ErrorType::ParseError, s.to_string()))
     }
 }
-
 

@@ -4,6 +4,7 @@ pub mod buffer;
 pub mod ui;
 pub mod action;
 pub mod pos;
+pub mod command;
 
 use std::result;
 use std::env::Args;
