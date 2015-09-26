@@ -19,8 +19,8 @@ pub trait RealPos {
     fn get_real_pos(&self, pos: &Pos) -> usize;
 }
 
-static POS_RE: &'static str = r"(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)";
-static RANGE_RE: &'static str = r"(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?";
+static POS_RE: &'static str = r"^(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)$";
+static RANGE_RE: &'static str = r"^(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?$";
 
 impl str::FromStr for Pos {
     type Err = Error;
@@ -38,12 +38,10 @@ impl str::FromStr for Pos {
             }
 
             if let Some(line) = captures.name("line") {
-                let line_nr: usize = match line.parse() {
-                    Ok(n) => n,
-                    Err(_) => return Err(Error::new(ErrorType::ParseError))
+                return  match line.parse() {
+                    Ok(n) => Ok(Pos::Line(n)),
+                    Err(_) => Err(Error::new(ErrorType::ParseError))
                 };
-
-                return Ok(Pos::Line(line_nr));
             }
         }
 

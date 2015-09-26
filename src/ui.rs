@@ -75,7 +75,11 @@ impl Ui {
 
         let mut input = String::new();
 
-        try!(stdin.read_line(&mut input));
+        let len = try!(stdin.read_line(&mut input));
+
+        if len == 0 {
+            return Ok(Action::Command(cmd::Cmd::Quit));
+        }
 
         let trim_input = input.trim_right();
 
