@@ -6,8 +6,6 @@ use Result;
 
 use buffer::Buffer;
 
-use action::Action;
-
 #[derive(Debug)]
 pub enum Mode {
     Command,
@@ -19,6 +17,12 @@ pub struct Ui {
     mode: Mode
 }
 
+#[derive(Debug)]
+pub enum Action {
+    Command(command::Command),
+    Insert(String),
+    InsertEnd,
+}
 
 impl Ui {
 
