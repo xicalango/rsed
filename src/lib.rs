@@ -126,8 +126,15 @@ impl Rsed {
             ui::Action::Command(Cmd::Quit) => self.running = false,
             ui::Action::Command(Cmd::Print(r, option)) => self.print_range(r, option),
             ui::Action::Command(Cmd::Jump(r)) => self.jump_to(r),
+            ui::Action::Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
             rest => println!("Unimplemented: {:?}", rest),
         };
+    }
+
+    fn print_line_number(&self, r: pos::Range) {
+        let (_, to) = r.to_range_tuple::<Rsed>(self);
+
+        println!("{}", to);
     }
 
     fn print_range(&self, r: pos::Range, option: ui::PrintOption) {

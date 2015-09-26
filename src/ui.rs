@@ -27,7 +27,8 @@ pub enum Action {
 #[derive(Debug)]
 pub enum PrintOption {
     Normal,
-    Numbered
+    Numbered,
+    LineEndings
 }
 
 pub struct DisplayModel<'a> {
@@ -63,7 +64,8 @@ impl Ui {
 
             let output = match model.option {
                 PrintOption::Normal => format!("{}", line),
-                PrintOption::Numbered => format!("{}\t{}", line_nr + model.from + 1, line)
+                PrintOption::Numbered => format!("{}\t{}", line_nr + model.from + 1, line),
+                PrintOption::LineEndings => format!("{}$", line)
             };
 
             println!("{}", output);

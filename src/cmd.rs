@@ -21,9 +21,10 @@ pub enum Cmd {
     JumpNext,
     Write,
     Print(pos::Range, PrintOption),
+    PrintLineNumber(pos::Range),
 }
 
-static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?])?$";
+static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?$";
 
 impl Cmd {
     fn from_char_and_range(c: char, range: pos::Range) -> Result<Cmd> {
@@ -33,6 +34,8 @@ impl Cmd {
             'w' => Ok(Cmd::Write),
             'p' => Ok(Cmd::Print(range, PrintOption::Normal)),
             'n' => Ok(Cmd::Print(range, PrintOption::Numbered)),
+            'l' => Ok(Cmd::Print(range, PrintOption::LineEndings)),
+            '=' => Ok(Cmd::PrintLineNumber(range)),
             '?' => Ok(Cmd::Debug(range)),
             _ => Err(Error::new(ErrorType::ParseError))
         }
