@@ -12,7 +12,7 @@ use {
 };
 
 #[derive(Debug)]
-pub enum Command {
+pub enum Cmd {
     EnterInsertMode(pos::Range),
     Quit,
     Debug(pos::Range),
@@ -24,26 +24,26 @@ pub enum Command {
 
 static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?])?$";
 
-impl Command {
-    fn from_char_and_range(c: char, range: pos::Range) -> Result<Command> {
+impl Cmd {
+    fn from_char_and_range(c: char, range: pos::Range) -> Result<Cmd> {
         match c {
-            'i' => Ok(Command::EnterInsertMode(range)),
-            'q' => Ok(Command::Quit),
-            'w' => Ok(Command::Write),
-            'p' => Ok(Command::Print(range)),
-            '?' => Ok(Command::Debug(range)),
+            'i' => Ok(Cmd::EnterInsertMode(range)),
+            'q' => Ok(Cmd::Quit),
+            'w' => Ok(Cmd::Write),
+            'p' => Ok(Cmd::Print(range)),
+            '?' => Ok(Cmd::Debug(range)),
             _ => Err(Error::new(ErrorType::ParseError))
         }
     }
 }
 
-impl str::FromStr for Command {
+impl str::FromStr for Cmd {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Command> {
+    fn from_str(s: &str) -> Result<Cmd> {
 
         if s.len() == 0 {
-            return Ok(Command::JumpNext);
+            return Ok(Cmd::JumpNext);
         }
 
         let re = Regex::new(COMMAND_RE).unwrap();
@@ -55,8 +55,8 @@ impl str::FromStr for Command {
                                  .unwrap_or(Ok(pos::Range::Line(pos::Pos::Current))));
 
             return match captures.name("cmd") {
-                Some(cmd) => Command::from_char_and_range(cmd.chars().next().unwrap(), cmd_range),
-                None => Ok(Command::Jump(cmd_range))
+                Some(cmd) => Cmd::from_char_and_range(cmd.chars().next().unwrap(), cmd_range),
+                None => Ok(Cmd::Jump(cmd_range))
             };
         } 
 

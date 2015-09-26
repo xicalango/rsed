@@ -3,7 +3,7 @@ extern crate regex;
 pub mod buffer;
 pub mod ui;
 pub mod pos;
-pub mod command;
+pub mod cmd;
 
 use std::result;
 use std::env::Args;
@@ -13,7 +13,7 @@ use std::io;
 
 use std::convert;
 
-pub type Result<T> = result::Result<T, Error>; // TODO update to better error
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum ErrorType {
