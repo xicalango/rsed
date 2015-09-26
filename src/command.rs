@@ -18,6 +18,8 @@ pub enum Command {
     Debug(pos::Range),
     Jump(pos::Range),
     JumpNext,
+    Write,
+    Print(pos::Range),
 }
 
 static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?])?$";
@@ -27,6 +29,8 @@ impl Command {
         match c {
             'i' => Ok(Command::EnterInsertMode(range)),
             'q' => Ok(Command::Quit),
+            'w' => Ok(Command::Write),
+            'p' => Ok(Command::Print(range)),
             '?' => Ok(Command::Debug(range)),
             _ => Err(Error::new(ErrorType::ParseError))
         }

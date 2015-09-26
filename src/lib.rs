@@ -2,7 +2,6 @@ extern crate regex;
 
 pub mod buffer;
 pub mod ui;
-pub mod action;
 pub mod pos;
 pub mod command;
 
@@ -10,10 +9,7 @@ use std::result;
 use std::env::Args;
 use std::fs::File;
 use std::path::Path;
-use std::io::{
-    BufReader,
-    stdin
-};
+use std::io;
 
 use std::convert;
 
@@ -22,7 +18,8 @@ pub type Result<T> = result::Result<T, Error>; // TODO update to better error
 #[derive(Debug)]
 pub enum ErrorType {
     Unknown,
-    ParseError
+    ParseError,
+    IoError(io::Error)
 }
 
 #[derive(Debug)]
@@ -34,6 +31,12 @@ pub struct Error {
 impl convert::From<regex::Error> for Error {
     fn from(e: regex::Error) -> Error {
         Error::detailed(ErrorType::ParseError, format!("{}", e))
+    }
+}
+
+impl convert::From<io::Error> for Error {
+    fn from(e: io::Error) -> Error {
+        Error::new(ErrorType::IoError(e))
     }
 }
 
@@ -84,7 +87,7 @@ impl Rsed {
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Rsed> {
         let file = File::open(path).unwrap();
-        let reader = BufReader::new(file);
+        let reader = io::BufReader::new(file);
         let buffer = buffer::Buffer::from_buf_read(reader);
 
         Ok(Rsed {
@@ -97,10 +100,16 @@ impl Rsed {
     pub fn main_loop(&mut self) {
 
         let mut running = true;
+        let mut stdin = io::stdin();
 
         while(running) {
-            let input = self.ui.get_input();
+            let action = self.ui.get_input(&mut stdin);
 
+            match action {
+                Ok(ui::Action::Command(command::Command::Quit)) => running = false,
+                Ok(rest) => println!("{:?}", rest),
+                Err(_) => println!("?")
+            };
         }
     }
 
@@ -111,9 +120,9 @@ pub fn run(mut args: Args) -> Result<()> {
 
     let path = args.nth(1).expect("fail");
 
-    let rsed = try!(Rsed::from_path(path));
+    let mut rsed = try!(Rsed::from_path(path));
 
-    rsed.ui.display(&rsed.current_buffer);
+    rsed.main_loop();
 
     Ok(())
 }
