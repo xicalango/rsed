@@ -3,9 +3,6 @@ use std::iter::FromIterator;
 use std::io::BufRead;
 use std::vec::IntoIter;
 
-use Result;
-use pos;
-
 #[derive(Debug)]
 pub struct Buffer {
     lines: Vec<String>,
@@ -97,7 +94,7 @@ impl Buffer {
     }
 
     fn is_out_of_bounds(&self, pos: usize) -> bool {
-        pos < 0 || pos > self.len()
+        pos > self.len()
     }
 
     pub fn get_lines(&self, begin: usize, end: usize) -> &[String] {

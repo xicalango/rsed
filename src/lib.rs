@@ -111,7 +111,7 @@ impl Rsed {
 
         let mut stdin = io::stdin();
 
-        while(self.running) {
+        while self.running {
             let action_result = self.ui.get_input(&mut stdin);
 
             match action_result {
@@ -124,22 +124,24 @@ impl Rsed {
     fn handle_action(&mut self, action: ui::Action) {
         match action {
             ui::Action::Command(Cmd::Quit) => self.running = false,
-            ui::Action::Command(Cmd::Print(r)) => self.print_range(r),
+            ui::Action::Command(Cmd::Print(r, option)) => self.print_range(r, option),
             ui::Action::Command(Cmd::Jump(r)) => self.jump_to(r),
             rest => println!("Unimplemented: {:?}", rest),
         };
     }
 
-    fn print_range(&self, r: pos::Range) {
-       let range = r.to_range_tuple::<Rsed>(self);
+    fn print_range(&self, r: pos::Range, option: ui::PrintOption) {
+       let (from, to) = r.to_range_tuple::<Rsed>(self);
 
-       self.ui.display( &self.current_buffer, range )
-       
+       let model = ui::DisplayModel::new( &self.current_buffer, from, to, option );
+
+       self.ui.display( model );
+
     }
 
     fn jump_to(&mut self, r: pos::Range) {
         self.current_line = self.get_real_pos( &pos::Pos::from(r) );
-        self.print_range( pos::Range::Line(pos::Pos::Current));
+        self.print_range( pos::Range::current_line(), ui::PrintOption::Normal);
     }
 
 }

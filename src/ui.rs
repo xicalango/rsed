@@ -24,6 +24,31 @@ pub enum Action {
     InsertEnd,
 }
 
+#[derive(Debug)]
+pub enum PrintOption {
+    Normal,
+    Numbered
+}
+
+pub struct DisplayModel<'a> {
+    buffer: &'a Buffer,
+    from: usize,
+    to: usize,
+    option: PrintOption
+}
+
+impl <'a> DisplayModel<'a> {
+    pub fn new(buffer: &'a Buffer, from: usize, to: usize, option: PrintOption) -> DisplayModel {
+        DisplayModel {
+            buffer: buffer,
+            from: from,
+            to: to,
+            option: option
+        }
+    }
+}
+
+
 impl Ui {
 
     pub fn new() -> Ui {
@@ -32,12 +57,18 @@ impl Ui {
         }
     }
 
-    pub fn display(&self, buffer: &Buffer, range: (usize, usize)) {
-        let (from, to) = range;
+    pub fn display<'a>(&self, model: DisplayModel<'a>) {
+        
+        for (line_nr, line) in model.buffer.get_lines( model.from, model.to ).iter().enumerate() {
 
-        for line in buffer.get_lines( from, to ) {
-            println!("{}", line);
+            let output = match model.option {
+                PrintOption::Normal => format!("{}", line),
+                PrintOption::Numbered => format!("{}\t{}", line_nr + model.from + 1, line)
+            };
+
+            println!("{}", output);
         }
+
     }
 
     pub fn get_input(&self, stdin: &io::Stdin) -> Result<Action> {

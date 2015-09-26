@@ -107,4 +107,8 @@ impl Range {
         }
     }
 
+    pub fn current_line() -> Range {
+        Range::Line(Pos::Current)
+    }
+
 }

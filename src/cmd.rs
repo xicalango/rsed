@@ -4,6 +4,7 @@ use std::str;
 use regex::Regex;
 
 use pos;
+use ui::PrintOption;
 
 use {
     Result,
@@ -19,7 +20,7 @@ pub enum Cmd {
     Jump(pos::Range),
     JumpNext,
     Write,
-    Print(pos::Range),
+    Print(pos::Range, PrintOption),
 }
 
 static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?])?$";
@@ -30,7 +31,8 @@ impl Cmd {
             'i' => Ok(Cmd::EnterInsertMode(range)),
             'q' => Ok(Cmd::Quit),
             'w' => Ok(Cmd::Write),
-            'p' => Ok(Cmd::Print(range)),
+            'p' => Ok(Cmd::Print(range, PrintOption::Normal)),
+            'n' => Ok(Cmd::Print(range, PrintOption::Numbered)),
             '?' => Ok(Cmd::Debug(range)),
             _ => Err(Error::new(ErrorType::ParseError))
         }
