@@ -250,16 +250,3 @@ impl <'a> pos::Converter<&'a pos::Pos, usize> for Rsed {
     }
 }
 
-pub fn run(mut args: Args) -> Result<()> {
-
-    let mut rsed = Rsed::new();
-
-    if let Some(p) = args.nth(1) {
-        try!(rsed.read_file(p));
-    }
-
-    rsed.main_loop();
-
-    Ok(())
-}
-
