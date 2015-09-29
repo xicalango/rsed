@@ -1,5 +1,6 @@
 use std::str;
 use std::convert;
+use std::ops;
 use regex::Regex;
 
 use {
@@ -15,8 +16,8 @@ pub enum Pos {
     End
 }
 
-pub trait RealPos {
-    fn get_real_pos(&self, pos: &Pos) -> usize;
+pub trait Converter<F, T> {
+    fn convert(&self, from: F) -> T;
 }
 
 static POS_RE: &'static str = r"^(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)$";
@@ -95,13 +96,21 @@ impl str::FromStr for Range {
 
 impl Range {
 
-    pub fn to_range_tuple<P: RealPos>(&self, conv: &RealPos) -> (usize, usize) {
+    pub fn to_range<'a, C>(&'a self, conv: &C) -> ops::Range<usize> 
+        where C: Converter<&'a Pos, usize> {
         match *self {
             Range::Line(ref p) => {
-                let pos = conv.get_real_pos(&p);
-                (pos - 1, pos)
+                let pos = conv.convert(&p);
+                ops::Range { 
+                    start: pos - 1, 
+                    end: pos
+                }
             },
-            Range::Range(ref f, ref t) => (conv.get_real_pos(&f) - 1, conv.get_real_pos(&t))
+
+            Range::Range(ref f, ref t) => ops::Range {
+                start: conv.convert(&f) - 1, 
+                end: conv.convert(&t)
+            }
         }
     }
 
@@ -110,3 +119,4 @@ impl Range {
     }
 
 }
+

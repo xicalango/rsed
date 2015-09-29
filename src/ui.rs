@@ -1,5 +1,6 @@
 
 use std::io;
+use std::ops;
 
 use Result;
 
@@ -33,17 +34,15 @@ pub enum PrintOption {
 
 pub struct DisplayModel<'a> {
     buffer: &'a Buffer,
-    from: usize,
-    to: usize,
+    range: ops::Range<usize>,
     option: PrintOption
 }
 
 impl <'a> DisplayModel<'a> {
-    pub fn new(buffer: &'a Buffer, from: usize, to: usize, option: PrintOption) -> DisplayModel {
+    pub fn new(buffer: &'a Buffer, range: ops::Range<usize>, option: PrintOption) -> DisplayModel {
         DisplayModel {
             buffer: buffer,
-            from: from,
-            to: to,
+            range: range,
             option: option
         }
     }
@@ -60,11 +59,11 @@ impl Ui {
 
     pub fn display<'a>(&self, model: DisplayModel<'a>) {
         
-        for (line_nr, line) in model.buffer.get_lines( model.from, model.to ).iter().enumerate() {
+        for (line_nr, line) in model.buffer.get_lines( &model.range ).iter().enumerate() {
 
             let output = match model.option {
                 PrintOption::Normal => format!("{}", line),
-                PrintOption::Numbered => format!("{}\t{}", line_nr + model.from + 1, line),
+                PrintOption::Numbered => format!("{}\t{}", line_nr + model.range.start + 1, line),
                 PrintOption::LineEndings => format!("{}$", line)
             };
 

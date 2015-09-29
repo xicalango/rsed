@@ -2,6 +2,7 @@
 use std::iter::FromIterator;
 use std::io::BufRead;
 use std::vec::IntoIter;
+use std::ops;
 
 #[derive(Debug)]
 pub struct Buffer {
@@ -93,16 +94,20 @@ impl Buffer {
         self.cached_num_lines
     }
 
-    fn is_out_of_bounds(&self, pos: usize) -> bool {
+    pub fn is_out_of_bounds(&self, pos: usize) -> bool {
         pos > self.len()
     }
 
-    pub fn get_lines(&self, begin: usize, end: usize) -> &[String] {
-        assert!(! self.is_out_of_bounds( begin ), format!("Out of bounds: {}/0", begin) );
-        assert!(! self.is_out_of_bounds( end ), format!("Out of bounds: {}/{}", end, self.len()) );
+    pub fn is_range_out_of_bounds(&self, range: &ops::Range<usize>) -> bool {
+        self.is_out_of_bounds(range.start) || self.is_out_of_bounds(range.end)
+    }
+
+    pub fn get_lines(&self, range: &ops::Range<usize>) -> &[String] {
+        assert!(! self.is_out_of_bounds( range.start ), format!("Out of bounds: {}/0", range.start) );
+        assert!(! self.is_out_of_bounds( range.end ), format!("Out of bounds: {}/{}", range.end, self.len()) );
 
 
-        &self.lines[ begin .. end ]
+        &self.lines[ range.start .. range.end ]
     }
 
 }

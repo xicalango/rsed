@@ -4,18 +4,18 @@ pub mod buffer;
 pub mod ui;
 pub mod pos;
 pub mod cmd;
+pub mod util;
 
 use std::result;
 use std::env::Args;
 use std::fs::File;
 use std::path::Path;
 use std::io;
-
 use std::convert;
 
 use self::cmd::Cmd;
 
-use self::pos::RealPos;
+use pos::Converter;
 
 pub type Result<T> = result::Result<T, Error>;
 
@@ -23,7 +23,10 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum ErrorType {
     Unknown,
     ParseError,
-    IoError(io::Error)
+    IoError(io::Error),
+    UnimplementedCmd(Cmd),
+    UnimplementedAction(ui::Action),
+    InvalidRange(pos::Range),
 }
 
 #[derive(Debug)]
@@ -107,54 +110,84 @@ impl Rsed {
         })
     }
 
+    pub fn read_file<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let file = try!(File::open(path));
+        let reader = io::BufReader::new(file);
+        
+        self.current_buffer = buffer::Buffer::from_buf_read(reader);
+
+        Ok(())
+    }
+
     pub fn main_loop(&mut self) {
 
         let mut stdin = io::stdin();
 
         while self.running {
-            let action_result = self.ui.get_input(&mut stdin);
+            let parsed_action = self.ui.get_input(&mut stdin);
 
-            match action_result {
+            let action_result = match parsed_action {
                 Ok(action) => self.handle_action(action),
-                Err(_) => println!("?")
+                Err(e) => Err(e)
             };
+
+            if let Err(e) = action_result {
+                println!("? {:?}", e);
+            }
         }
     }
 
-    fn handle_action(&mut self, action: ui::Action) {
+    fn handle_action(&mut self, action: ui::Action) -> Result<()> {
         match action {
-            ui::Action::Command(Cmd::Quit) => self.running = false,
+            ui::Action::Command(Cmd::Quit) => Ok(self.running = false),
             ui::Action::Command(Cmd::Print(r, option)) => self.print_range(r, option),
             ui::Action::Command(Cmd::Jump(r)) => self.jump_to(r),
             ui::Action::Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
-            rest => println!("Unimplemented: {:?}", rest),
-        };
+            ui::Action::Command(Cmd::JumpNext) => self.jump_next(),
+            ui::Action::Command(rest) => Err(Error::new(ErrorType::UnimplementedCmd(rest))),
+            rest => Err(Error::new(ErrorType::UnimplementedAction(rest)))
+        }
     }
 
-    fn print_line_number(&self, r: pos::Range) {
-        let (_, to) = r.to_range_tuple::<Rsed>(self);
+    fn print_line_number(&self, r: pos::Range) -> Result<()> {
+        let range = r.to_range(self);
 
-        println!("{}", to);
+        println!("{}", range.end);
+        Ok(())
     }
 
-    fn print_range(&self, r: pos::Range, option: ui::PrintOption) {
-       let (from, to) = r.to_range_tuple::<Rsed>(self);
+    fn print_range(&self, r: pos::Range, option: ui::PrintOption) -> Result<()> {
+       let range = r.to_range(self);
 
-       let model = ui::DisplayModel::new( &self.current_buffer, from, to, option );
+       if self.current_buffer.is_range_out_of_bounds(&range) {
+           return Err(Error::new(ErrorType::InvalidRange(r)));
+       }
+
+       let model = ui::DisplayModel::new( &self.current_buffer, range, option );
 
        self.ui.display( model );
 
+       Ok(())
     }
 
-    fn jump_to(&mut self, r: pos::Range) {
-        self.current_line = self.get_real_pos( &pos::Pos::from(r) );
-        self.print_range( pos::Range::current_line(), ui::PrintOption::Normal);
+    fn jump_to(&mut self, r: pos::Range) -> Result<()> {
+        self.current_line = self.convert( &pos::Pos::from(r) );
+        self.print_range( pos::Range::current_line(), ui::PrintOption::Normal)
+    }
+
+    fn jump_next(&mut self) -> Result<()> {
+        if self.current_buffer.is_out_of_bounds(self.current_line + 1) {
+            return Err(Error::unknown("invalid line"));
+        }
+
+        self.current_line += 1;
+        self.print_range( pos::Range::current_line(), ui::PrintOption::Normal)
     }
 
 }
 
-impl pos::RealPos for Rsed {
-    fn get_real_pos(&self, pos: &pos::Pos) -> usize {
+impl <'a> pos::Converter<&'a pos::Pos, usize> for Rsed {
+    fn convert(&self, pos: &pos::Pos) -> usize {
         match *pos {
             pos::Pos::Line(n) => n,
             pos::Pos::Current => self.current_line,
@@ -167,9 +200,12 @@ pub fn run(mut args: Args) -> Result<()> {
 
     let path = args.nth(1).expect("fail");
 
-    let mut rsed = try!(Rsed::from_path(path));
+    let mut rsed = Rsed::new();
+
+    try!(rsed.read_file(path));
 
     rsed.main_loop();
 
     Ok(())
 }
+

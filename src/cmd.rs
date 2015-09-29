@@ -5,6 +5,7 @@ use regex::Regex;
 
 use pos;
 use ui::PrintOption;
+use util::FlipResultOption;
 
 use {
     Result,
@@ -38,6 +39,48 @@ impl Cmd {
             '=' => Ok(Cmd::PrintLineNumber(range)),
             '?' => Ok(Cmd::Debug(range)),
             _ => Err(Error::new(ErrorType::ParseError))
+        }
+    }
+}
+
+struct ParsedData {
+    cmd_char: Option<char>,
+    range: Option<pos::Range>,
+    arg: Option<String>
+}
+
+impl ParsedData {
+
+    fn empty() -> ParsedData {
+        ParsedData {
+            cmd_char: None,
+            range: None,
+            arg: None
+        }
+    }
+
+    fn new(s: &str) -> Result<ParsedData> {
+
+        if s.len() == 0 {
+            return Ok(ParsedData::empty());
+        }
+
+        let re = try!(Regex::new(COMMAND_RE));
+
+        if let Some(captures) = re.captures(s) {
+
+            let cmd_range = try!(captures.name("range").map(|r| r.parse::<pos::Range>()).flip());
+
+            let cmd_char = captures.name("cmd").and_then(|c| c.chars().next());
+            
+            Ok(ParsedData {
+                cmd_char: cmd_char,
+                range: cmd_range,
+                arg: None
+            })
+
+        } else {
+            Err(Error::new(ErrorType::ParseError))
         }
     }
 }
