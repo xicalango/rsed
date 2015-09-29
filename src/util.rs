@@ -1,10 +1,4 @@
 
-use std::convert::{
-    From,
-    Into
-};
-
-
 pub trait FlipResultOption<R, E> {
     fn flip(self) -> Result<Option<R>, E>;
 }

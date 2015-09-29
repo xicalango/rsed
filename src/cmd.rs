@@ -3,8 +3,6 @@ use std::str;
 
 use regex::Regex;
 
-use std::convert::From;
-
 use pos;
 use ui::PrintOption;
 use util::FlipResultOption;
@@ -27,7 +25,7 @@ pub enum Cmd {
     PrintLineNumber(pos::Range),
 }
 
-static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?$";
+static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?(?P<arg>.*)?$";
 
 impl Cmd {
     fn from_parsed_data(data: ParsedData) -> Result<Cmd> {
@@ -49,7 +47,6 @@ impl Cmd {
                 '?' => Ok(Cmd::Debug(range)),
                 _ => Err(Error::new(ErrorType::ParseError))
             }
-
         } else {
             
             if data.arg != None {
@@ -97,7 +94,7 @@ impl str::FromStr for ParsedData {
 
         if let Some(captures) = re.captures(s) {
 
-            let cmd_range = try!(captures.name("range").map(|r| r.parse::<pos::Range>()).flip());
+            let cmd_range = try!(captures.name("range").map(|r| r.parse()).flip());
 
             let cmd_char = captures.name("cmd").and_then(|c| c.chars().next());
             
