@@ -9,7 +9,8 @@ use Result;
 #[derive(Debug)]
 pub struct Buffer {
     lines: Vec<String>,
-    cached_num_lines: usize
+    cached_num_lines: usize,
+    modified: bool
 }
 
 trait InsertAll {
@@ -55,7 +56,8 @@ impl Buffer {
     pub fn new() -> Buffer {
         Buffer { 
             lines: Vec::new(),
-            cached_num_lines: 0 as usize
+            cached_num_lines: 0 as usize,
+            modified: false
         }
     }
 
@@ -68,7 +70,8 @@ impl Buffer {
 
         Ok(Buffer {
             lines: lines_vec,
-            cached_num_lines: cached_len
+            cached_num_lines: cached_len,
+            modified: false
         })
 
     }
@@ -76,20 +79,27 @@ impl Buffer {
     pub fn insert_lines<I: IntoIterator<Item=String>>(&mut self, pos: usize, insert: I) {
         let added_lines = self.lines.insert_all(pos, insert);
         self.cached_num_lines += added_lines;
+        self.modified = true;
     }
 
     pub fn insert_buffer(&mut self, pos: usize, buffer: Buffer) {
         self.lines.insert_all(pos, buffer.lines);
         self.cached_num_lines += buffer.cached_num_lines;
+        self.modified = true;
     }
 
     pub fn add_line(&mut self, line: String) {
         self.lines.push(line);
         self.cached_num_lines += 1;
+        self.modified = true;
     }
 
     pub fn is_empty(&self) -> bool {
         self.cached_num_lines == 0
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.modified
     }
 
     pub fn len(&self) -> usize {
