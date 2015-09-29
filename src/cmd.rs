@@ -22,7 +22,7 @@ pub enum Cmd {
     JumpNext,
     Print(pos::Range, PrintOption),
     PrintLineNumber(pos::Range),
-    Read(String),
+    Edit(String),
     Write(Option<String>)
 }
 
@@ -75,6 +75,8 @@ impl ParsedData {
                 'l' => expect_no_arg(arg, Cmd::Print(range, PrintOption::LineEndings)),
                 '=' => expect_no_arg(arg, Cmd::PrintLineNumber(range)),
                 '?' => expect_no_arg(arg, Cmd::Debug(range)),
+                'w' => Ok(Cmd::Write(arg.ok())),
+                'e' => Ok(Cmd::Edit(try!(arg))),
                 _ => Err(Error::detailed(ErrorType::ParseError, "unknown command"))
             }
         } else {
