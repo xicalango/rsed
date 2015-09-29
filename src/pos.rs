@@ -20,8 +20,8 @@ pub trait Converter<F, T> {
     fn convert(&self, from: F) -> T;
 }
 
-static POS_RE: &'static str = r"^(?P<current>\.)|(?P<end>\$)|(?P<line>\d+)$";
-static RANGE_RE: &'static str = r"^(?P<all>%)|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?$";
+static POS_RE: &'static str = r"^((?P<current>\.)|(?P<end>\$)|(?P<line>\d+))$";
+static RANGE_RE: &'static str = r"^((?P<all>%{1})|(?P<first>[.$0-9]+)(,(?P<second>[.$0-9]+))?)$";
 
 impl str::FromStr for Pos {
     type Err = Error;
@@ -72,7 +72,7 @@ impl str::FromStr for Range {
         let re = Regex::new(RANGE_RE).unwrap();
 
         if let Some(captures) = re.captures(s) {
-            if let Some(_) = captures.name("all") {
+            if let Some(c) = captures.name("all") {
                 return Ok( Range::Range( Pos::Line(1), Pos::End ) );
             }
 

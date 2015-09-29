@@ -20,43 +20,21 @@ pub enum Cmd {
     Debug(pos::Range),
     Jump(pos::Range),
     JumpNext,
-    Write,
     Print(pos::Range, PrintOption),
     PrintLineNumber(pos::Range),
+    Read(String),
+    Write(Option<String>)
 }
 
-static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?(?P<arg>.*)?$";
+impl str::FromStr for Cmd {
+    type Err = Error;
 
-impl Cmd {
-    fn from_parsed_data(data: ParsedData) -> Result<Cmd> {
-        if data.is_empty() {
-            return Ok(Cmd::JumpNext);
-        }
-
-        let range = data.range.unwrap_or_else( pos::Range::current_line );
-
-        if let Some(c) = data.cmd_char {
-            match c {
-                'i' => Ok(Cmd::EnterInsertMode(range)),
-                'q' => Ok(Cmd::Quit),
-                'w' => Ok(Cmd::Write),
-                'p' => Ok(Cmd::Print(range, PrintOption::Normal)),
-                'n' => Ok(Cmd::Print(range, PrintOption::Numbered)),
-                'l' => Ok(Cmd::Print(range, PrintOption::LineEndings)),
-                '=' => Ok(Cmd::PrintLineNumber(range)),
-                '?' => Ok(Cmd::Debug(range)),
-                _ => Err(Error::new(ErrorType::ParseError))
-            }
-        } else {
-            
-            if data.arg != None {
-                return Err(Error::new(ErrorType::ParseError))
-            }
-
-            Ok(Cmd::Jump(range))
-        }
+    fn from_str(s: &str) -> Result<Cmd> {
+        try!(s.parse::<ParsedData>()).to_cmd()
     }
 }
+
+static COMMAND_RE: &'static str = r"^((?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?( (?P<arg>.*))?)$";
 
 struct ParsedData {
     cmd_char: Option<char>,
@@ -79,8 +57,43 @@ impl ParsedData {
             arg: None
         }
     }
+
+    fn to_cmd(self) -> Result<Cmd> {
+        if self.is_empty() {
+            return Ok(Cmd::JumpNext);
+        }
+
+        let range = self.range.unwrap_or_else( pos::Range::current_line );
+
+        if let Some(c) = self.cmd_char {
+            match c {
+                'i' => expect_no_arg(&self.arg, Cmd::EnterInsertMode(range)),
+                'q' => expect_no_arg(&self.arg, Cmd::Quit),
+                'p' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::Normal)),
+                'n' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::Numbered)),
+                'l' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::LineEndings)),
+                '=' => expect_no_arg(&self.arg, Cmd::PrintLineNumber(range)),
+                '?' => expect_no_arg(&self.arg, Cmd::Debug(range)),
+                _ => Err(Error::new(ErrorType::ParseError))
+            }
+        } else {
+            
+            if self.arg != None {
+                return Err(Error::new(ErrorType::ParseError))
+            }
+
+            expect_no_arg(&self.arg, Cmd::Jump(range))
+        }
+    }
 }
 
+fn expect_no_arg(arg: &Option<String>, cmd: Cmd) -> Result<Cmd> {
+    match *arg {
+        None => Ok(cmd),
+        _ => Err(Error::new(ErrorType::ParseError))
+    }
+}
+    
 impl str::FromStr for ParsedData {
     type Err = Error;
 
@@ -97,27 +110,18 @@ impl str::FromStr for ParsedData {
             let cmd_range = try!(captures.name("range").map(|r| r.parse()).flip());
 
             let cmd_char = captures.name("cmd").and_then(|c| c.chars().next());
+
+            let cmd_arg = captures.name("arg").map(str::to_string);
             
             Ok(ParsedData {
                 cmd_char: cmd_char,
                 range: cmd_range,
-                arg: None
+                arg: cmd_arg
             })
 
         } else {
             Err(Error::new(ErrorType::ParseError))
         }
-    }
-}
-
-impl str::FromStr for Cmd {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Cmd> {
-
-        let parsed_data = try!(s.parse::<ParsedData>());
-
-        Cmd::from_parsed_data(parsed_data)
     }
 }
 
