@@ -138,13 +138,17 @@ impl Rsed {
     }
 
     fn handle_action(&mut self, action: ui::Action) -> Result<()> {
+        use ui::Action::*;
+
         match action {
-            ui::Action::Command(Cmd::Quit) => Ok(self.running = false),
-            ui::Action::Command(Cmd::Print(r, option)) => self.print_range(r, option),
-            ui::Action::Command(Cmd::Jump(r)) => self.jump_to(r),
-            ui::Action::Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
-            ui::Action::Command(Cmd::JumpNext) => self.jump_next(),
-            ui::Action::Command(rest) => Err(Error::new(ErrorType::UnimplementedCmd(rest))),
+            Command(Cmd::Quit) => Ok(self.running = false),
+            Command(Cmd::Print(r, option)) => self.print_range(r, option),
+            Command(Cmd::Jump(r)) => self.jump_to(r),
+            Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
+            Command(Cmd::JumpNext) => self.jump_next(),
+            Command(Cmd::Edit(f)) => self.read_file(f),
+            Command(rest) => Err(Error::new(ErrorType::UnimplementedCmd(rest))),
+            
             rest => Err(Error::new(ErrorType::UnimplementedAction(rest)))
         }
     }

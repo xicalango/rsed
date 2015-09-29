@@ -72,7 +72,7 @@ impl str::FromStr for Range {
         let re = Regex::new(RANGE_RE).unwrap();
 
         if let Some(captures) = re.captures(s) {
-            if let Some(c) = captures.name("all") {
+            if let Some(_) = captures.name("all") {
                 return Ok( Range::Range( Pos::Line(1), Pos::End ) );
             }
 
