@@ -3,6 +3,8 @@ use std::str;
 
 use regex::Regex;
 
+use std::convert::From;
+
 use pos;
 use ui::PrintOption;
 use util::FlipResultOption;
@@ -28,17 +30,33 @@ pub enum Cmd {
 static COMMAND_RE: &'static str = r"^(?P<range>[%.,$\d]+)?(?P<cmd>[a-zA-Z?=])?$";
 
 impl Cmd {
-    fn from_char_and_range(c: char, range: pos::Range) -> Result<Cmd> {
-        match c {
-            'i' => Ok(Cmd::EnterInsertMode(range)),
-            'q' => Ok(Cmd::Quit),
-            'w' => Ok(Cmd::Write),
-            'p' => Ok(Cmd::Print(range, PrintOption::Normal)),
-            'n' => Ok(Cmd::Print(range, PrintOption::Numbered)),
-            'l' => Ok(Cmd::Print(range, PrintOption::LineEndings)),
-            '=' => Ok(Cmd::PrintLineNumber(range)),
-            '?' => Ok(Cmd::Debug(range)),
-            _ => Err(Error::new(ErrorType::ParseError))
+    fn from_parsed_data(data: ParsedData) -> Result<Cmd> {
+        if data.is_empty() {
+            return Ok(Cmd::JumpNext);
+        }
+
+        let range = data.range.unwrap_or_else( pos::Range::current_line );
+
+        if let Some(c) = data.cmd_char {
+            match c {
+                'i' => Ok(Cmd::EnterInsertMode(range)),
+                'q' => Ok(Cmd::Quit),
+                'w' => Ok(Cmd::Write),
+                'p' => Ok(Cmd::Print(range, PrintOption::Normal)),
+                'n' => Ok(Cmd::Print(range, PrintOption::Numbered)),
+                'l' => Ok(Cmd::Print(range, PrintOption::LineEndings)),
+                '=' => Ok(Cmd::PrintLineNumber(range)),
+                '?' => Ok(Cmd::Debug(range)),
+                _ => Err(Error::new(ErrorType::ParseError))
+            }
+
+        } else {
+            
+            if data.arg != None {
+                return Err(Error::new(ErrorType::ParseError))
+            }
+
+            Ok(Cmd::Jump(range))
         }
     }
 }
@@ -50,6 +68,12 @@ struct ParsedData {
 }
 
 impl ParsedData {
+    fn is_empty(&self) -> bool {
+        match (&self.cmd_char, &self.range, &self.arg) {
+            (&None, &None, &None) => true,
+            _ => false
+        }
+    }
 
     fn empty() -> ParsedData {
         ParsedData {
@@ -58,8 +82,12 @@ impl ParsedData {
             arg: None
         }
     }
+}
 
-    fn new(s: &str) -> Result<ParsedData> {
+impl str::FromStr for ParsedData {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<ParsedData> {
 
         if s.len() == 0 {
             return Ok(ParsedData::empty());
@@ -90,25 +118,9 @@ impl str::FromStr for Cmd {
 
     fn from_str(s: &str) -> Result<Cmd> {
 
-        if s.len() == 0 {
-            return Ok(Cmd::JumpNext);
-        }
+        let parsed_data = try!(s.parse::<ParsedData>());
 
-        let re = Regex::new(COMMAND_RE).unwrap();
-
-        if let Some(captures) = re.captures(s) {
-
-            let cmd_range = try!(captures.name("range")
-                                 .map(|r| r.parse::<pos::Range>())
-                                 .unwrap_or(Ok(pos::Range::Line(pos::Pos::Current))));
-
-            return match captures.name("cmd") {
-                Some(cmd) => Cmd::from_char_and_range(cmd.chars().next().unwrap(), cmd_range),
-                None => Ok(Cmd::Jump(cmd_range))
-            };
-        } 
-
-        Err(Error::detailed(ErrorType::ParseError, s.to_string()))
+        Cmd::from_parsed_data(parsed_data)
     }
 }
 
