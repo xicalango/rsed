@@ -86,9 +86,14 @@ impl Ui {
 
         match self.mode {
             Mode::Command => Ok(Action::Command(try!(trim_input.parse()))),
+            Mode::Insert if trim_input == "." => Ok(Action::InsertEnd), 
             Mode::Insert => Ok(Action::Insert(trim_input.to_string()))
         }
 
+    }
+
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode;
     }
 
 }

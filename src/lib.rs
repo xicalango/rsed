@@ -70,15 +70,25 @@ impl Error {
     }
 }
 
+#[derive(Debug)]
 struct InputInformation {
-    position: pos::Range,
+    position: pos::Pos,
     input_buffer: buffer::Buffer
+}
+
+impl InputInformation {
+    fn new(pos: pos::Pos) -> InputInformation {
+        InputInformation {
+            position: pos,
+            input_buffer: buffer::Buffer::new()
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct Rsed {
     current_buffer: buffer::Buffer,
-    input_buffer: Option<buffer::Buffer>,
+    input_info: Option<InputInformation>,
     current_line: usize,
     ui: ui::Ui,
     running: bool,
@@ -89,7 +99,7 @@ impl Rsed {
     pub fn new() -> Rsed {
         Rsed {
             current_buffer: buffer::Buffer::new(),
-            input_buffer: Option::None,
+            input_info: None,
             current_line: 1,
             ui: ui::Ui::new(),
             running: true
@@ -103,7 +113,7 @@ impl Rsed {
 
         Ok(Rsed {
             current_buffer: buffer,
-            input_buffer: Option::None,
+            input_info: None,
             current_line: 1,
             ui: ui::Ui::new(),
             running: true
@@ -147,10 +157,48 @@ impl Rsed {
             Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
             Command(Cmd::JumpNext) => self.jump_next(),
             Command(Cmd::Edit(f)) => self.read_file(f),
+            Command(Cmd::EnterInsertMode(r)) => self.enter_insert_mode(r),
             Command(rest) => Err(Error::new(ErrorType::UnimplementedCmd(rest))),
-            
-            rest => Err(Error::new(ErrorType::UnimplementedAction(rest)))
+
+            Insert(s) => self.insert_line(s),
+            InsertEnd => self.end_insert_mode()
         }
+    }
+
+    fn enter_insert_mode(&mut self, r: pos::Range) -> Result<()> {
+        match self.input_info {
+            None => (),
+            _ => panic!(),
+        };
+
+        let pos = pos::Pos::from(r);
+
+        self.input_info = Some(InputInformation::new(pos));
+
+        Ok(self.ui.set_mode( ui::Mode::Insert ))
+    }
+
+    fn insert_line(&mut self, s: String) -> Result<()> {
+        if let Some(ref mut input_info) = self.input_info { 
+            Ok(input_info.input_buffer.add_line(s))
+        } else {
+            panic!();
+        }
+    }
+
+    fn end_insert_mode(&mut self) -> Result<()> {
+
+        if let Some(input_info) = self.input_info.take() {
+            let pos = self.convert(&input_info.position);
+            let input_buffer = input_info.input_buffer;
+
+            self.current_line = pos + input_buffer.len();
+            self.current_buffer.insert_buffer( pos, input_buffer );
+        } else {
+            panic!();
+        }
+
+        Ok(self.ui.set_mode( ui::Mode::Command ))
     }
 
     fn print_line_number(&self, r: pos::Range) -> Result<()> {
@@ -159,6 +207,8 @@ impl Rsed {
         println!("{}", range.end);
         Ok(())
     }
+
+    
 
     fn print_range(&self, r: pos::Range, option: ui::PrintOption) -> Result<()> {
        let range = r.to_range(self);
