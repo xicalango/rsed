@@ -4,6 +4,8 @@ use std::io::BufRead;
 use std::vec::IntoIter;
 use std::ops;
 
+use Result;
+
 #[derive(Debug)]
 pub struct Buffer {
     lines: Vec<String>,
@@ -57,17 +59,17 @@ impl Buffer {
         }
     }
 
-    pub fn from_buf_read<R: BufRead + Sized> (buf_read: R) -> Buffer {
+    pub fn from_buf_read<R: BufRead + Sized> (buf_read: R) -> Result<Buffer> {
 
         let lines = buf_read.lines();
 
         let lines_vec = lines.map(|r| r.unwrap()).collect::<Vec<String>>();
         let cached_len = lines_vec.len();
 
-        Buffer {
+        Ok(Buffer {
             lines: lines_vec,
             cached_num_lines: cached_len
-        }
+        })
 
     }
 

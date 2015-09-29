@@ -97,9 +97,9 @@ impl Rsed {
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Rsed> {
-        let file = File::open(path).unwrap();
+        let file = try!(File::open(path));
         let reader = io::BufReader::new(file);
-        let buffer = buffer::Buffer::from_buf_read(reader);
+        let buffer = try!(buffer::Buffer::from_buf_read(reader));
 
         Ok(Rsed {
             current_buffer: buffer,
@@ -114,7 +114,7 @@ impl Rsed {
         let file = try!(File::open(path));
         let reader = io::BufReader::new(file);
         
-        self.current_buffer = buffer::Buffer::from_buf_read(reader);
+        self.current_buffer = try!(buffer::Buffer::from_buf_read(reader));
 
         Ok(())
     }
@@ -202,11 +202,11 @@ impl <'a> pos::Converter<&'a pos::Pos, usize> for Rsed {
 
 pub fn run(mut args: Args) -> Result<()> {
 
-    let path = args.nth(1).expect("fail");
-
     let mut rsed = Rsed::new();
 
-    try!(rsed.read_file(path));
+    if let Some(p) = args.nth(1) {
+        try!(rsed.read_file(p));
+    }
 
     rsed.main_loop();
 
