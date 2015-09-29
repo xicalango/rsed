@@ -62,9 +62,9 @@ impl Error {
         }
     }
 
-    pub fn detailed(error: ErrorType, msg: String) -> Error {
+    pub fn detailed<T: ToString>(error: ErrorType, msg: T) -> Error {
         Error {
-            msg: msg,
+            msg: msg.to_string(),
             error: error
         }
     }

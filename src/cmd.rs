@@ -64,33 +64,29 @@ impl ParsedData {
         }
 
         let range = self.range.unwrap_or_else( pos::Range::current_line );
+        let arg = self.arg.ok_or( Error::detailed(ErrorType::ParseError, "arg expected") );
 
         if let Some(c) = self.cmd_char {
             match c {
-                'i' => expect_no_arg(&self.arg, Cmd::EnterInsertMode(range)),
-                'q' => expect_no_arg(&self.arg, Cmd::Quit),
-                'p' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::Normal)),
-                'n' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::Numbered)),
-                'l' => expect_no_arg(&self.arg, Cmd::Print(range, PrintOption::LineEndings)),
-                '=' => expect_no_arg(&self.arg, Cmd::PrintLineNumber(range)),
-                '?' => expect_no_arg(&self.arg, Cmd::Debug(range)),
-                _ => Err(Error::new(ErrorType::ParseError))
+                'i' => expect_no_arg(arg, Cmd::EnterInsertMode(range)),
+                'q' => expect_no_arg(arg, Cmd::Quit),
+                'p' => expect_no_arg(arg, Cmd::Print(range, PrintOption::Normal)),
+                'n' => expect_no_arg(arg, Cmd::Print(range, PrintOption::Numbered)),
+                'l' => expect_no_arg(arg, Cmd::Print(range, PrintOption::LineEndings)),
+                '=' => expect_no_arg(arg, Cmd::PrintLineNumber(range)),
+                '?' => expect_no_arg(arg, Cmd::Debug(range)),
+                _ => Err(Error::detailed(ErrorType::ParseError, "unknown command"))
             }
         } else {
-            
-            if self.arg != None {
-                return Err(Error::new(ErrorType::ParseError))
-            }
-
-            expect_no_arg(&self.arg, Cmd::Jump(range))
+            expect_no_arg(arg, Cmd::Jump(range))
         }
     }
 }
 
-fn expect_no_arg(arg: &Option<String>, cmd: Cmd) -> Result<Cmd> {
-    match *arg {
-        None => Ok(cmd),
-        _ => Err(Error::new(ErrorType::ParseError))
+fn expect_no_arg(arg: Result<String>, cmd: Cmd) -> Result<Cmd> {
+    match arg {
+        Err(_) => Ok(cmd),
+        _ => Err(Error::detailed(ErrorType::ParseError, "no arg expected"))
     }
 }
     
