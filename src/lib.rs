@@ -7,7 +7,6 @@ pub mod cmd;
 pub mod util;
 
 use std::result;
-use std::env::Args;
 use std::fs::File;
 use std::path::Path;
 use std::io;
