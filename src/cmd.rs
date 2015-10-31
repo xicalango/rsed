@@ -19,6 +19,7 @@ pub enum Cmd {
     Quit,
     Debug(pos::Range),
     Jump(pos::Range),
+    Delete(pos::Range),
     JumpNext,
     Print(pos::Range, PrintOption),
     PrintLineNumber(pos::Range),
@@ -68,6 +69,7 @@ impl ParsedData {
 
         if let Some(c) = self.cmd_char {
             match c {
+                'd' => expect_no_arg(arg, Cmd::Delete(range)),
                 'i' => expect_no_arg(arg, Cmd::EnterInsertMode(range)),
                 'q' => expect_no_arg(arg, Cmd::Quit),
                 'p' => expect_no_arg(arg, Cmd::Print(range, PrintOption::Normal)),

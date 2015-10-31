@@ -12,6 +12,8 @@ use std::path::Path;
 use std::io;
 use std::convert;
 
+use std::ffi::OsString;
+
 use self::cmd::Cmd;
 
 use pos::Converter;
@@ -91,6 +93,7 @@ pub struct Rsed {
     current_line: usize,
     ui: ui::Ui,
     running: bool,
+    file_name: Option<OsString>,
 }
 
 impl Rsed {
@@ -101,11 +104,13 @@ impl Rsed {
             input_info: None,
             current_line: 1,
             ui: ui::Ui::new(),
-            running: true
+            running: true,
+            file_name: None
         }
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Rsed> {
+        let file_name = path.as_ref().as_os_str().to_os_string();
         let file = try!(File::open(path));
         let reader = io::BufReader::new(file);
         let buffer = try!(buffer::Buffer::from_buf_read(reader));
@@ -115,15 +120,19 @@ impl Rsed {
             input_info: None,
             current_line: 1,
             ui: ui::Ui::new(),
-            running: true
+            running: true,
+            file_name: Some(file_name)
         })
     }
 
     pub fn read_file<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let file_name = Some(path.as_ref().as_os_str().to_os_string());
+
         let file = try!(File::open(path));
         let reader = io::BufReader::new(file);
         
         self.current_buffer = try!(buffer::Buffer::from_buf_read(reader));
+        self.file_name = file_name;
 
         Ok(())
     }
@@ -151,11 +160,14 @@ impl Rsed {
 
         match action {
             Command(Cmd::Quit) => Ok(self.running = false),
+            Command(Cmd::Delete(r)) => self.delete(r),
             Command(Cmd::Print(r, option)) => self.print_range(r, option),
             Command(Cmd::Jump(r)) => self.jump_to(r),
             Command(Cmd::PrintLineNumber(r)) => self.print_line_number(r),
             Command(Cmd::JumpNext) => self.jump_next(),
             Command(Cmd::Edit(f)) => self.read_file(f),
+            Command(Cmd::Write(Some(f))) => self.write_file(f),
+            Command(Cmd::Write(None)) => self.write_same_file(),
             Command(Cmd::EnterInsertMode(r)) => self.enter_insert_mode(r),
             Command(rest) => Err(Error::new(ErrorType::UnimplementedCmd(rest))),
 
@@ -164,11 +176,26 @@ impl Rsed {
         }
     }
 
+    fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let file_name = Some(path.as_ref().as_os_str().to_os_string());
+
+        // TODO open will crash if file doesn't exist
+        let mut file = try!(File::open(path));
+        try!( self.current_buffer.write(&mut file) );
+
+        self.file_name = file_name;
+
+        Ok(())
+    }
+
+    fn write_same_file(&self) -> Result<()> {
+        Err(Error::unknown("unimplemented"))
+    }
+
     fn enter_insert_mode(&mut self, r: pos::Range) -> Result<()> {
-        match self.input_info {
-            None => (),
-            _ => panic!(),
-        };
+        if let Some(_) = self.input_info {
+            panic!()
+        }
 
         let pos = pos::Pos::from(r);
 
@@ -207,7 +234,12 @@ impl Rsed {
         Ok(())
     }
 
-    
+    fn delete(&mut self, r: pos::Range) -> Result<()> {
+        let range = r.to_range(self);
+
+        self.current_buffer.delete_lines( range.start, range.end );
+        Ok(())
+    }
 
     fn print_range(&self, r: pos::Range, option: ui::PrintOption) -> Result<()> {
        let range = r.to_range(self);

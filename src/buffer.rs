@@ -1,8 +1,12 @@
 
 use std::iter::FromIterator;
-use std::io::BufRead;
+use std::io::{
+    BufRead,
+    Write
+};
 use std::vec::IntoIter;
 use std::ops;
+
 
 use Result;
 
@@ -94,6 +98,14 @@ impl Buffer {
         self.modified = true;
     }
 
+    pub fn delete_lines(&mut self, start: usize, end: usize) {
+        for _ in start..end {
+            self.lines.remove(start);
+        }
+
+        self.cached_num_lines -= end - start;
+    }
+
     pub fn is_empty(&self) -> bool {
         self.cached_num_lines == 0
     }
@@ -120,6 +132,15 @@ impl Buffer {
 
 
         &self.lines[ range.start .. range.end ]
+    }
+
+    pub fn write<W: Write>(&self, w:&mut W) -> Result<()> {
+        
+        for line in self.lines.iter() {
+            try!( w.write_all( line.as_bytes() ) );
+        }
+
+        Ok(())
     }
 
 }
