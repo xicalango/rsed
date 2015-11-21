@@ -101,9 +101,16 @@ impl Range {
         match *self {
             Range::Line(ref p) => {
                 let pos = conv.convert(&p);
-                ops::Range { 
-                    start: pos - 1, 
-                    end: pos
+                if pos == 0 {
+                    ops::Range {
+                        start: 0,
+                        end: 0
+                    }
+                } else {
+                    ops::Range { 
+                        start: pos - 1, 
+                        end: pos
+                    }
                 }
             },
 
